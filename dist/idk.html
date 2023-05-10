@@ -1,0 +1,566 @@
+base <!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jscharting.com/latest/jscharting.js"></script>
+    <title>COVID Cases</title>
+    </head>
+    <style>
+        body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin: 0;
+          padding: 0;
+          background-color: #1d2630;
+          font-family: 'Varela Round', sans-serif;
+        }
+  
+        h1 {
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+          color: #fffbfb;
+        }
+  
+        form {
+          display: flex;
+          flex-direction: column;
+          width: 50%;
+          background-color: #686d6b86;
+          border-radius: 0px;
+          padding: 2rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+      
+        form label {
+          margin-bottom: 0.5rem;
+          font-size: 15px;
+          color: #fff;
+          font-weight: bold;
+        }
+      
+        form input {
+          margin-bottom: 1rem;
+          padding: 0.5rem 1rem;
+          font-size: 18px;
+          border: none;
+          border-radius: 3px;
+          background-color: #fff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+      
+        button[type="button"] {
+          margin-top: 1rem;
+          align-self: center;
+          background-color: #4a90e2;
+          border: none;
+          border-radius: 3px;
+          color: #fff;
+          padding: 0.5rem 1rem;
+          cursor: pointer;
+          font-size: 15px;
+          font-weight: bold;
+        }
+      
+        button[type="button"]:hover {
+          background-color: #3d7ccd;
+        }
+  
+        table {
+          width: 80%;
+          border-collapse: collapse;
+          background-color: #fff;
+          border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-top: 60px;
+        }
+  
+        th {
+          background-color: #4a90e2;
+          color: #111111;
+          padding: 0.75rem;
+          text-align: left;
+        }
+  
+        td {
+          padding: 0.75rem;
+          text-align: left;
+        }
+  
+        button.edit-button,
+        button.delete-button {
+          background-color: #4a90e2;
+          border: none;
+          border-radius: 3px;
+          color: #fff;
+          padding: 0.5rem;
+          cursor: pointer;
+          margin-right: 0.5rem;
+        }
+  
+        button.edit-button:hover {
+          background-color: #3d7ccd;
+        }
+  
+        button.delete-button {
+          background-color: #e74c3c;
+        }
+  
+        button.delete-button:hover {
+          background-color: #c0392b;
+        }
+
+      table {
+
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #f2f2f2;
+      }
+      
+      .modal-content {
+        background-color: #383737;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 1rem;
+      }
+      
+      .pagination button {
+        background-color: #4a90e2;
+        border: none;
+        border-radius: 3px;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        margin-right: 0.5rem;
+      }
+      
+      .pagination button:hover {
+        background-color: #3d7ccd;
+      }
+       
+    </style>
+  
+  <body>
+    <h1>COVID Cases</h1>
+    <button id="add-button" type="button">Add Data</button>
+    <div id="add-form-modal" class="modal">
+      <div class="modal-content">
+        <h2>Add Data</h2>
+        <form>
+          <label for="country">Country:</label>
+          <input type="text" id="country" name="country" />
+          <label for="cases">Total Cases:</label>
+          <input type="text" id="cases" name="cases" />
+          <label for="deaths">Total Deaths:</label>
+          <input type="text" id="deaths" name="deaths" />
+          <label for="recovered">Total Recovered:</label>
+          <input type="text" id="recovered" name="recovered" />
+          <label for="active">Active Cases:</label>
+          <input type="text" id="active" name="active" />
+          <button type="button" onclick="addData()">Add Data</button>
+          <button type="button" onclick="closeAddForm()">Cancel</button>
+        </form>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>Country</th>
+          <th>Total Cases</th>
+          <th>Total Deaths</th>
+          <th>Total Recovered</th>
+          <th>Active Cases</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="covid-cases">
+      </tbody>
+    </table>
+    <div class="pagination">
+      <button id="prev-btn" onclick="prevPage()" disabled>Previous</button>
+      <button id="next-btn" onclick="nextPage()">Next</button>
+    </div>
+    
+    
+    <div id="edit-form" class="modal">
+      <div class="modal-content">
+        <h2>Edit Case</h2>
+        <form>
+          <input type="hidden" id="edit-id" />
+          <label for="edit-country">Country:</label>
+          <input type="text" id="edit-country" name="country" />
+          <label for="edit-cases">Total Cases:</label>
+          <input type="text" id="edit-cases" name="cases" />
+          <label for="edit-deaths">Total Deaths:</label>
+          <input type="text" id="edit-deaths" name="deaths" />
+          <label for="edit-recovered">Total Recovered:</label>
+          <input type="text" id="edit-recovered" name="recovered" />
+          <label for="edit-active">Active Cases:</label>
+          <input type="text" id="edit-active" name="active" />
+          <button type="button" onclick="submitEditForm()">Update Data</button>
+          <button type="button" onclick="cancelEditForm()">Cancel</button>
+        </form>
+      </div>
+    </div>
+      </div>
+      <div id="chart-container-cases" style="width: 70%; height: 300px; margin: 2rem 0;"></div>
+      <div id="chart-container-deaths" style="width: 70%; height: 300px; margin: 2rem 0;"></div>
+      <div id="chart-container-recovered" style="width: 70%; height: 300px; margin: 2rem 0;"></div>
+      <div id="chart-container-active" style="width: 70%; height: 300px; margin: 2rem 0;"></div>
+      
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyCaXgBZcBkfZRF5X-YPNFhvY-C7ufceAWg",
+        authDomain: "ababonfirebase.firebaseapp.com",
+        databaseURL: "https://ababonfirebase-default-rtdb.firebaseio.com",
+        projectId: "ababonfirebase",
+        storageBucket: "ababonfirebase.appspot.com",
+        messagingSenderId: "809851666126",
+        appId: "1:809851666126:web:ef2f47cb874fd27380da9f",
+        measurementId: "G-DB5B08LYHE"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      function showAlert(message) {
+        Swal.fire({
+          title: 'Success',
+          text: message,
+          icon: 'success',
+          confirmButtonText: 'OK',
+        });
+      }
+ 
+      
+      // Add data to Firestore
+      const addButton = document.getElementById("add-button");
+const addFormModal = document.getElementById("add-form-modal");
+
+function openAddForm() {
+  addFormModal.style.display = "block";
+}
+
+function closeAddForm() {
+  addFormModal.style.display = "none";
+}
+
+addButton.addEventListener("click", openAddForm);
+
+
+
+// Add data to Firestore
+function addData() {
+  const country = document.getElementById("country").value;
+  const cases = document.getElementById("cases").value;
+  const deaths = document.getElementById("deaths").value;
+  const recovered = document.getElementById("recovered").value;
+  const active = document.getElementById("active").value;
+  db.collection("covid-cases")
+    .add({
+      country: country,
+      cases: cases,
+      deaths: deaths,
+      recovered: recovered,
+      active: active,
+    })
+    .then((docRef) => {
+      console.log("Document written with ID: ", docRef.id);
+      showAlert("New data successfully added.");
+      document.getElementById("country").value = "";
+      document.getElementById("cases").value = "";
+      document.getElementById("deaths").value = "";
+      document.getElementById("recovered").value = "";
+      document.getElementById("active").value = "";
+    })
+    .catch((error) => {
+      console.error("Error adding document: ", error);
+    });
+}
+
+
+// Show edit form
+function showEditForm(id, country, cases, deaths, recovered, active) {
+  document.getElementById("edit-form").style.display = "block";
+  document.getElementById("edit-id").value = id;
+  document.getElementById("edit-country").value = country;
+  document.getElementById("edit-cases").value = cases;
+  document.getElementById("edit-deaths").value = deaths;
+  document.getElementById("edit-recovered").value = recovered;
+  document.getElementById("edit-active").value = active;
+}
+
+// Submit the edit form
+function submitEditForm() {
+  const id = document.getElementById("edit-id").value;
+  const country = document.getElementById("edit-country").value;
+  const cases = document.getElementById("edit-cases").value;
+  const deaths = document.getElementById("edit-deaths").value;
+  const recovered = document.getElementById("edit-recovered").value;
+  const active = document.getElementById("edit-active").value;
+  updateData(id, { country: country, cases: cases, deaths: deaths, recovered: recovered, active: active });
+  document.getElementById("edit-form").style.display = "none";
+  clearEditForm();
+}
+
+// Cancel the edit form
+function cancelEditForm() {
+  document.getElementById("edit-form").style.display = "none";
+  clearEditForm();
+}
+
+// Clear the edit form
+function clearEditForm() {
+  document.getElementById("edit-id").value = "";
+  document.getElementById("edit-country").value = "";
+  document.getElementById("edit-cases").value = "";
+  document.getElementById("edit-deaths").value = "";
+  document.getElementById("edit-recovered").value = "";
+  document.getElementById("edit-active").value = "";
+}
+
+              // Update data in Firestore
+              function updateData(id, data) {
+                db.collection("covid-cases")
+                  .doc(id)
+                  .update(data)
+                  .then(() => {
+                    console.log("Document updated");
+                    showAlert("Edit data successfully.");
+                  })
+                  
+                  .catch((error) => {
+                    console.error("Error updating document: ", error);
+                  });
+              }
+        
+              // Delete data from Firestore
+              function deleteData(id) {
+                db.collection("covid-cases")
+                  .doc(id)
+                  .delete()
+                  .then(() => {
+                    console.log("Document deleted");
+                    showAlert("Data deleted successfully.");
+                  })
+                  .catch((error) => {
+                    console.error("Error deleting document: ", error);
+                  });
+                }
+        
+              // Get data from Firestore
+              let currentPage = 1;
+const rowsPerPage = 10;
+
+function updateTableDisplay() {
+  const covidCasesTable = document.getElementById("covid-cases");
+  for (let i = 0; i < covidCasesTable.rows.length; i++) {
+    if (i >= (currentPage - 1) * rowsPerPage && i < currentPage * rowsPerPage) {
+      covidCasesTable.rows[i].style.display = "table-row";
+    } else {
+      covidCasesTable.rows[i].style.display = "none";
+    }
+  }
+  updatePaginationButtons();
+}
+
+function updatePaginationButtons() {
+  const covidCasesTable = document.getElementById("covid-cases");
+  const prevButton = document.getElementById("prev-btn");
+  const nextButton = document.getElementById("next-btn");
+
+  if (currentPage === 1) {
+    prevButton.disabled = true;
+  } else {
+    prevButton.disabled = false;
+  }
+
+  if (currentPage * rowsPerPage >= covidCasesTable.rows.length) {
+    nextButton.disabled = true;
+  } else {
+    nextButton.disabled = false;
+  }
+}
+
+function nextPage() {
+  currentPage++;
+  updateTableDisplay();
+}
+
+function prevPage() {
+  currentPage--;
+  updateTableDisplay();
+}
+
+              db.collection("covid-cases").onSnapshot((querySnapshot) => {
+  const covidCasesTable = document.getElementById("covid-cases");
+  covidCasesTable.innerHTML = "";
+  const chartData = [];
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    chartData.push({ country: data.country, cases: data.cases, deaths: data.deaths, recovered: data.recovered, active: data.active });
+    const row = document.createElement("tr");
+    const countryCell = document.createElement("td");
+    const casesCell = document.createElement("td");
+    const deathsCell = document.createElement("td");
+    const recoveredCell = document.createElement("td");
+    const activeCell= document.createElement("td");
+    const actionsCell = document.createElement("td");
+    const updateButton = document.createElement("button");
+    const deleteButton = document.createElement("button");
+    countryCell.textContent = data.country;
+    casesCell.textContent = data.cases;
+    deathsCell.textContent = data.deaths;
+    recoveredCell.textContent = data.recovered;
+    activeCell.textContent = data.active;
+    updateButton.textContent = "Update";
+    deleteButton.textContent = "Delete";
+    updateButton.addEventListener("click", () => {
+      showEditForm(doc.id, data.country, data.cases);
+    });
+    deleteButton.addEventListener("click", () => {
+      deleteData(doc.id);
+    });
+    actionsCell.appendChild(updateButton);
+    actionsCell.appendChild(deleteButton);
+    row.appendChild(countryCell);
+    row.appendChild(casesCell);
+    row.appendChild(deathsCell);
+    row.appendChild(recoveredCell);
+    row.appendChild(activeCell);
+    row.appendChild(actionsCell);
+    covidCasesTable.appendChild(row);
+  });
+  renderChart(chartData);
+  updateTableDisplay();
+});
+
+function renderChart(chartData) {
+  const baseChartOptions = {
+    type: 'bar',
+    xAxis: {
+      labelText: 'Country',
+    },
+    yAxis: {
+      labelText: 'Number of Cases',
+    },
+    legend: {
+      visible: false,
+    },
+    defaultPointTooltip: '{%yValue:,.0f}',
+    defaultPoint_tooltip: '<b>%seriesName</b><br>%name: %y',
+  };
+
+  const casesChartOptions = {
+    ...baseChartOptions,
+    targetElement: 'chart-container-cases',
+    series: [
+      {
+        name: 'Total Cases',
+        points: chartData.map((data) => ({
+          name: data.country,
+          y: parseInt(data.cases),
+        })),
+      },
+    ],
+    defaultPoint: {
+      color: '#4a90e2',
+    },
+  };
+  new JSC.Chart({ ...casesChartOptions, title_label_text: "Total Cases" });
+
+
+  const deathsChartOptions = {
+    ...baseChartOptions,
+    targetElement: 'chart-container-deaths',
+    series: [
+      {
+        name: 'Total Deaths',
+        points: chartData.map((data) => ({
+          name: data.country,
+          y: parseInt(data.deaths),
+        })),
+      },
+    ],
+    defaultPoint: {
+      color: '#e74c3c',
+    },
+  };
+  new JSC.Chart({ ...deathsChartOptions, title_label_text: "Total Deaths" });
+
+
+  const recoveredChartOptions = {
+    ...baseChartOptions,
+    targetElement: 'chart-container-recovered',
+    series: [
+      {
+        name: 'Total Recovered',
+        points: chartData.map((data) => ({
+          name: data.country,
+          y: parseInt(data.recovered),
+        })),
+      },
+    ],
+    defaultPoint: {
+      color: '#27ae60',
+    },
+  };
+  new JSC.Chart({ ...recoveredChartOptions, title_label_text: "Total Recovered" });
+
+  const activeChartOptions = {
+    ...baseChartOptions,
+    targetElement: 'chart-container-active',
+    series: [
+      {
+        name: 'Active Cases',
+        points: chartData.map((data) => ({
+          name: data.country,
+          y: parseInt(data.active),
+        })),
+      },
+    ],
+    defaultPoint: {
+      color: '#f39c12',
+    },
+  };
+  new JSC.Chart({ ...activeChartOptions, title_label_text: "Active Cases" });
+}
+
+
+</script>
+</body>
+</html>
+        
