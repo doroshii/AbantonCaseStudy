@@ -249,31 +249,80 @@ addButton.addEventListener("click", openAddForm);
 
 
 // Add data to Firestore
+// Add data to Firestore
 function addData() {
   const country = document.getElementById("country").value;
-  const cases = document.getElementById("cases").value;
-  const deaths = document.getElementById("deaths").value;
-  const recovered = document.getElementById("recovered").value;
-  const active = document.getElementById("active").value;
-  db.collection("covid-cases")
-    .add({
-      country: country,
-      cases: cases,
-      deaths: deaths,
-      recovered: recovered,
-      active: active,
-    })
-    .then((docRef) => {
-      console.log("Document written with ID: ", docRef.id);
-      showAlert("New data successfully added.");
-      document.getElementById("country").value = "";
-      document.getElementById("cases").value = "";
-      document.getElementById("deaths").value = "";
-      document.getElementById("recovered").value = "";
-      document.getElementById("active").value = "";
+  const cases = parseInt(document.getElementById("cases").value.replace(/,/g, ""));
+  const deaths = parseInt(document.getElementById("deaths").value.replace(/,/g, ""));
+  const recovered = parseInt(document.getElementById("recovered").value.replace(/,/g, ""));
+  const active = parseInt(document.getElementById("active").value.replace(/,/g, ""));
+
+  // Retrieve the existing data for the country from Firestore
+  const existingDataRef = db.collection("covid-cases").where("country", "==", country);
+  existingDataRef
+    .get()
+    .then((querySnapshot) => {
+      if (querySnapshot.empty) {
+        // If the country does not exist, add a new entry to the table
+        db.collection("covid-cases")
+          .add({
+            country: country,
+            cases: cases.toLocaleString(),
+            deaths: deaths.toLocaleString(),
+            recovered: recovered.toLocaleString(),
+            active: active.toLocaleString(),
+          })
+          .then((docRef) => {
+            console.log("Document written with ID: ", docRef.id);
+            showAlert("New data successfully added.");
+            document.getElementById("country").value = "";
+            document.getElementById("cases").value = "";
+            document.getElementById("deaths").value = "";
+            document.getElementById("recovered").value = "";
+            document.getElementById("active").value = "";
+          })
+          .catch((error) => {
+            console.error("Error adding document: ", error);
+          });
+      } else {
+        // If the country exists, update the existing entry
+        querySnapshot.forEach((doc) => {
+          const existingCases = parseInt(doc.data().cases.replace(/,/g, ""));
+          const existingDeaths = parseInt(doc.data().deaths.replace(/,/g, ""));
+          const existingRecovered = parseInt(doc.data().recovered.replace(/,/g, ""));
+          const existingActive = parseInt(doc.data().active.replace(/,/g, ""));
+
+          const mergedCases = existingCases + cases;
+          const mergedDeaths = existingDeaths + deaths;
+          const mergedRecovered = existingRecovered + recovered;
+          const mergedActive = existingActive + active;
+
+          // Update the existing entry in Firestore
+          db.collection("covid-cases")
+            .doc(doc.id)
+            .update({
+              cases: mergedCases.toLocaleString(),
+              deaths: mergedDeaths.toLocaleString(),
+              recovered: mergedRecovered.toLocaleString(),
+              active: mergedActive.toLocaleString(),
+            })
+            .then(() => {
+              console.log("Document updated");
+              showAlert("Data merged successfully.");
+              document.getElementById("country").value = "";
+              document.getElementById("cases").value = "";
+              document.getElementById("deaths").value = "";
+              document.getElementById("recovered").value = "";
+              document.getElementById("active").value = "";
+            })
+            .catch((error) => {
+              console.error("Error updating document: ", error);
+            });
+        });
+      }
     })
     .catch((error) => {
-      console.error("Error adding document: ", error);
+      console.error("Error getting documents: ", error);
     });
 }
 
@@ -281,19 +330,21 @@ function addData() {
 function showEditForm(id, country, cases, deaths, recovered, active) {
   document.getElementById("edit-form").style.display = "block";
   document.getElementById("edit-id").value = id;
-  document.getElementById("edit-country").value = country;
-  document.getElementById("edit-cases").value = cases;
-  document.getElementById("edit-deaths").value = deaths;
-  document.getElementById("edit-recovered").value = recovered;
-  document.getElementById("edit-active").value = active;
+  document.getElementById("edit-country").value = country || '';
+  document.getElementById("edit-cases").value = cases || '';
+  document.getElementById("edit-deaths").value = deaths || '';
+  document.getElementById("edit-recovered").value = recovered || '';
+  document.getElementById("edit-active").value = active || '';
 }
+
+
 
 // Submit the edit form
 function submitEditForm() {
   const id = document.getElementById("edit-id").value;
   const country = document.getElementById("edit-country").value;
   const cases = document.getElementById("edit-cases").value;
-  const deaths = document.getElementById("edit-deaths").value;
+  const deaths = document.getElementById("edit-deaths").value
   const recovered = document.getElementById("edit-recovered").value;
   const active = document.getElementById("edit-active").value;
   updateData(id, { country: country, cases: cases, deaths: deaths, recovered: recovered, active: active });
@@ -431,7 +482,7 @@ function changeSlide(n) {
     updateButton.textContent = "Update";
     deleteButton.textContent = "Delete";
     updateButton.addEventListener("click", () => {
-      showEditForm(doc.id, data.country, data.cases);
+      showEditForm(doc.id, data.country, data.cases, data.deaths, data.recovered, data.active);
     });
     deleteButton.addEventListener("click", () => {
       deleteData(doc.id);
@@ -452,7 +503,7 @@ function changeSlide(n) {
 
 function renderChart(chartData) {
   const baseChartOptions = {
-    type: 'bar',
+    type: 'column',
     xAxis: {
       labelText: 'Country',
     },
